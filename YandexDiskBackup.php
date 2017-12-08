@@ -127,7 +127,6 @@ function uploadFileToDisk($filename, $dir = '') {
   ));
 
 	if (file_exists($filename)) {
-      $file = fopen($filename, 'r');
       $ch = curl_init();
 
   		$headers = array(
@@ -147,11 +146,11 @@ function uploadFileToDisk($filename, $dir = '') {
   		$res = curl_getinfo($ch);
 
 			if ($res['http_code'] === 200) {
-          // $file = fopen($filename, 'r');
+          $file = fopen($filename, 'r');
   				$putOptions = array(
 							CURLOPT_URL             => $body['href'],
       				CURLOPT_RETURNTRANSFER  => TRUE,
-      				CURLOPT_VERBOSE         => TRUE,
+      				CURLOPT_VERBOSE         => FALSE,
       		    CURLOPT_PUT             => TRUE,
               CURLOPT_HTTPHEADER      => $headers,
               CURLOPT_INFILE          => $file,
@@ -161,10 +160,9 @@ function uploadFileToDisk($filename, $dir = '') {
 
 					$body = curl_exec($ch);
   				$res = curl_getinfo($ch);
-          // fclose($file);
+          fclose($file);
 			}
 			curl_close($ch);
-      fclose($file);
 
   		if ($res['http_code'] === 201 || $res['http_code'] === 202) {
     			return TRUE;

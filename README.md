@@ -13,10 +13,8 @@ __1.Создайте пользователя в MySQL__
 Создайте пользователя с правами только на чтение баз данных, которые вы хотите бэкапить:
 
 ```mysql
-GRANT USAGE ON *.* TO 'dump_user'@'%' IDENTIFIED BY 'password';
-GRANT SELECT, LOCK TABLES ON `mysql`.* TO 'dump_user'@'%';
-GRANT SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER ON `site1_db`.* TO 'dump_user'@'%';
-GRANT SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER ON `site2_db`.* TO 'dump_user'@'%';
+CREATE USER 'backup_user'@'localhost' IDENTIFIED BY 'secret';
+GRANT SELECT, SHOW VIEW, LOCK TABLES, RELOAD, REPLICATION CLIENT, EVENT, TRIGGER ON *.* TO 'backup_user'@'localhost';
 ```
 
 __2.Настройте скрипт__
