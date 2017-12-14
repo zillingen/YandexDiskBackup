@@ -2,6 +2,54 @@
 
 $config = require_once __DIR__."/config.php";
 $date = date('Ymd_His').'UTC'; // Дата создания бэкапа
+$tmpDir = __DIR__.'/'.$config['tmp_dir'];
+
+/**
+ * MAGIC
+ */
+if (!file_exists($tmpDir)) {
+  $mkdir = mkdir($tmpDir);
+  if (!$mkdir) {
+    print "Невозможно создать директорию $tmpDir \n";
+    exit(1);
+  }
+} elseif (file_exists($tmpDir) && is_dir($tmpDir) && !is_writable($tmpDir)) {
+  print "Директория $tmpDir не доступна для записи\n";
+  exit(1);
+}
+
+if (getDiskInfo()) {  
+  foreach($config['sites'] as $key => $site) {
+    if( file_exists($site['dir']) && is_dir($site['dir']) ) {
+      $archive = __DIR__."/{$config['tmp_dir']}/{$key}_{$date}.zip";
+      createZipArchive($site['dir'], $archive);
+
+      // Если у сайта есть БД и она указана, то делаем дамп и добавляем его к архиву
+      if ( array_key_exists('db_name', $site) && $site['db_name']) {
+        $dump = __DIR__."/{$config['tmp_dir']}/{$site['db_name']}_dump_{$date}.sql"; 
+        
+        createMysqlDump($site['db_name'], $site['db_username'], $site['db_password'], $dump);        
+        appendFileToZipArchive($dump, $archive);
+        unlink($dump);
+      }
+
+      // Загружаем архивы на Я.Диск
+      if(!getDiskFileInfo($key)) {
+        createDiskDir($key);
+      }
+      $upload = uploadFileToDisk($archive, $key);
+      if ($upload) {
+        print "Файл $archive загружен.\n";
+      } else {
+        print "Ошибка при загрузке файла $archive \n";
+      }
+    }
+  }
+} else {
+  print "Ошибка при подключении к Яндекс.Диску\n";
+  exit(1);
+}
+
 
 /**
  * Проверка подключения к диску и вывод базовой информации 
@@ -57,7 +105,7 @@ function getDiskFileInfo($path) {
   $options = array(
       CURLOPT_URL             => $url,
       CURLOPT_RETURNTRANSFER  => TRUE,
-      CURLOPT_VERBOSE         => TRUE,
+      CURLOPT_VERBOSE         => FALSE,
       CURLOPT_HTTPHEADER      => $headers,
     );
   curl_setopt_array($ch, $options);
@@ -117,7 +165,7 @@ function createDiskDir($name) {
  * Загружает файл на диск
  *
  * @param string $filename Имя файла, который надо загрузить
- * @param string $dir      Папка, куда положить файл на Я.Диске
+ * @param string $dir      Папка сайта на Я.Диске
  */
 function uploadFileToDisk($filename, $dir = '') {
 	global $config;
