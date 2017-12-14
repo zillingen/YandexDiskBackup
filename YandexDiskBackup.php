@@ -175,23 +175,66 @@ function uploadFileToDisk($filename, $dir = '') {
 }
 
 /**
- * Создание Zip архива из директории
+ * Создание Zip архива из файла или директории
  *
- * @param string $sourceDir Директория, которую надо запаковать
- * @param string $zipArchive Имя файла zip архива
+ * @param string $source Директория или файл, которую надо запаковать
+ * @param string $destination Имя файла zip архива
  */
-function createZipArchiveFromDir($sourceDir, $zipArchive) {
+function createZipArchive($source, $destination) {
+  global $config;
 
+	if (extension_loaded('zip')) {
+
+		if (file_exists($source)) {
+			$zip = new ZipArchive();
+
+			if ($zip->open($destination, ZIPARCHIVE::CREATE)) {
+				$source = realpath($source);
+
+				if (is_dir($source)) {
+
+					$files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source), RecursiveIteratorIterator::SELF_FIRST);
+
+					foreach ($files as $file) {
+						$file = realpath($file);
+
+						if ( is_dir($file) === TRUE ) {
+							$zip->addEmptyDir(str_replace($source . '/', '', $file . '/'));
+						} else if ( is_file($file) === TRUE ) {
+							$zip->addFile($file, str_replace($source . '/', '', $file));
+						}
+					}
+
+				} else if ( is_file($source) === TRUE ) {
+					$zip->addFile($source, basename($source));
+				}
+			}
+			return $zip->close();
+		}
+	}
+	return FALSE;
 }
 
 /**
  * Добавление файла к zip архиву
  *
- * @param string $fileName Имя добавляемого файла
- * @param string $zipArchive Имя архива
+ * @param string $file Имя добавляемого файла
+ * @param string $archive Имя архива
  */
-function appendFileToZipArchive($fileName, $zipArchive) {
+function appendFileToZipArchive($file, $archive) {
+  if (extension_loaded('zip')) {
+    
+    if (file_exists($file)) {
+      $zip = new ZipArchive();
 
+      if ($zip->open($archive, ZIPARCHIVE::CREATE)) {
+        $zip->AddFile($file, basename($file));
+        
+        return $zip->close();
+      }
+    }
+  }
+  return FALSE; 
 }
 
 /**
@@ -203,5 +246,5 @@ function appendFileToZipArchive($fileName, $zipArchive) {
  * @param string $dumpFile Имя файла дампа
  */
 function createMysqlDump($db, $username, $password, $dumpFile) {
-
+  system("mysqldump -u$username -p$password --databases $db > $dumpFile");
 }
