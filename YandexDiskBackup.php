@@ -1,6 +1,7 @@
 <?php
 
 $config = require_once __DIR__."/config.php";
+date_default_timezone_set('UTC');
 $date = date('Ymd_His').'UTC'; // Дата создания бэкапа
 $tmpDir = __DIR__.'/'.$config['tmp_dir'];
 
